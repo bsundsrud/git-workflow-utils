@@ -1,2 +1,15 @@
 # git-cleanup
-Bash script to clean up merged branches
+Bash script to clean up merged branches.  Install somewhere on `$PATH` and invoke with `git cleanup`.
+
+## Usage
+
+```
+Usage: git-cleanup [<options>] [<BRANCH>]
+
+  BRANCH      Base branch name.  Branches that have been merged into this branch will be deleted
+              Defaults to current branch.
+  -s          Simulate.  Prints commands it would run instead of actually running them
+  -r          Delete branches from remote
+  -f          Force. Does not prompt for confirmation
+  -h          Print this help text
+```
