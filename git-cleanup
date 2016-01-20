@@ -1,0 +1,140 @@
+#!/bin/bash
+if [ -z "$GIT_CLEANUP_BLACKLIST_BRANCHES" ]; then
+    GIT_CLEANUP_BLACKLIST_BRANCHES="master"
+fi
+
+function usage() {
+    local msg
+    msg="$1"
+    local exe
+    exe="$(basename "$0")"
+    if [ -n "$msg" ]; then
+        echo "ERROR: $msg"
+    fi
+    echo "Cleans local and remote branches that have been merged into the given branch"
+    echo "Usage: $exe [<options>] [<BRANCH>]"
+    echo ""
+    echo "  BRANCH      Base branch name.  Branches that have been merged into this branch will be deleted"
+    echo "              Defaults to current branch."
+    echo "  -s          Simulate.  Prints commands it would run instead of actually running them"
+    echo "  -r          Delete branches from remote"
+    echo "  -f          Force. Does not prompt for confirmation"
+    echo "  -h          Print this help text"
+    exit 1
+}
+
+function clean_branch() {
+    local branch
+    branch="$1"
+    local dry_run
+    dry_run="$2"
+    if [ -n "$REMOTE" ]; then
+        local upstream
+        upstream="$(git rev-parse --abbrev-ref "$branch"@{u} 2> /dev/null)" || ""
+        local remote
+        local upstream_branch
+        remote="$(echo "$upstream" | cut -d '/' -f1)"
+        upstream_branch="$(echo "$upstream" | cut -d '/' -f2)"
+        if [ -n "$upstream" ]; then
+            if [ -z "$dry_run" ]; then
+                git push --delete "$remote" "$upstream_branch"
+            else
+                echo "git push --delete $remote $upstream_branch"
+            fi
+        fi
+    fi
+    if [ -z "$dry_run" ]; then
+        git branch -d "$branch"
+    else
+        echo "git branch -d $branch"
+    fi
+}
+
+function clean_all() {
+    local base_branch
+    local dry_run
+    local blacklist_branches
+    local merged
+    local remotes
+    base_branch="$1"
+    dry_run="$2"
+    blacklist_branches="$GIT_CLEANUP_BLACKLIST_BRANCHES $base_branch"
+    remotes="$(git remote | xargs echo -n)"
+    merged="$(git branch --no-color --merged "$base_branch")"
+    merged="$(echo "$merged" | grep -v '^\*')"
+    for b in $blacklist_branches; do
+        merged="$(echo "$merged" | grep -v "^  $b")"
+    done
+    merged="$(echo "$merged" | cut -d ' ' -f3-)"
+    if [ -n "$REMOTE" ]; then
+        if [ -z "$dry_run" ]; then
+            git remote prune $remotes
+        else
+            git remote prune --dry-run $remotes
+        fi
+    fi
+
+    for b in $merged; do
+        clean_branch "$b" "$dry_run"
+    done
+
+}
+
+args=$(getopt sfrh $*)
+set -- $args
+
+for i; do
+    case "$i" in
+        -s)
+            DRY_RUN="1";
+            shift;;
+        -f)
+            FORCE="1";
+            shift;;
+        -r)
+            REMOTE="1";
+            shift;;
+        -h)
+            usage
+            ;;
+        --)
+            shift;
+            break;;
+    esac
+done
+
+if [ -n "$DRY_RUN" -a -n "$FORCE" ]; then
+    usage "-s and -f cannot be specified together."
+fi
+
+if [ -z "$1" ]; then
+    BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+else
+    BRANCH="$1"
+fi
+shift
+if [ -n "$1" ]; then
+    usage "Too many parameters: $@"
+fi
+
+if [ -n "$FORCE" ]; then
+    clean_all "$BRANCH"
+    exit 0
+fi
+
+clean_all "$BRANCH" "1"
+if [ -z "$DRY_RUN" ]; then
+    echo -n "Continue? [yN] "
+    read choice
+    case "$choice" in
+        [yY])
+            clean_all "$BRANCH"
+            ;;
+        *)
+            echo "User cancelled."
+            ;;
+    esac
+fi
+
+
+
