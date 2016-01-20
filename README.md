@@ -13,3 +13,7 @@ Usage: git-cleanup [<options>] [<BRANCH>]
   -f          Force. Does not prompt for confirmation
   -h          Print this help text
 ```
+
+## Config
+
+You can use the environment variable `$GIT_CLEANUP_BLACKLIST_BRANCHES` to stop branches from being cleaned up.  It is a space-separated list that defaults to `master`.
