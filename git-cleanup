@@ -30,7 +30,7 @@ function clean_branch() {
     dry_run="$2"
     if [ -n "$REMOTE" ]; then
         local upstream
-        upstream="$(git rev-parse --abbrev-ref "$branch"@{u} 2> /dev/null)" || ""
+        upstream="$(git rev-parse --abbrev-ref "$branch"@{u} 2> /dev/null)"
         local remote
         local upstream_branch
         remote="$(echo "$upstream" | cut -d '/' -f1)"
@@ -135,6 +135,3 @@ if [ -z "$DRY_RUN" ]; then
             ;;
     esac
 fi
-
-
-

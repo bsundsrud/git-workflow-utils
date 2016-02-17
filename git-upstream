@@ -1,0 +1,13 @@
+#!/bin/bash
+
+git fetch --all
+
+CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+
+if git ls-remote --exit-code . "upstream/$CURRENT_BRANCH"; then
+  git merge "upstream/$CURRENT_BRANCH" || exit 1
+  git push origin "$CURRENT_BRANCH"
+else
+  echo "No branch 'upstream/$CURRENT_BRANCH' found."
+  exit 1
+fi
