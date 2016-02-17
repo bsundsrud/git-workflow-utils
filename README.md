@@ -26,9 +26,11 @@ Bash script to fetch all remotes and merge a matching named branch from upstream
 
 Assumes that the upstream remote is named `upstream`.  Useful if you're using a forking workflow where you create an issue branch, push to your fork (`origin`), and open a PR to the main repository.  The standard dance is:
 
+```
   # Assuming on branch 'master'
   git fetch upstream
   git merge upstream/master
   git push origin master
+```
 
 Which is basically all this script does anyway, with some checking that an upstream branch of the same name actually exists.
